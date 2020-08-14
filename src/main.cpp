@@ -4,8 +4,8 @@
 #include <iostream>
 #include <string>
 
-#include "PID.h"
 #include "json.hpp"
+#include "vehicle_controller.h"
 
 // for convenience
 using nlohmann::json;
@@ -34,16 +34,14 @@ string hasData(string s) {
 int main() {
   uWS::Hub h;
 
-  PID pid;
-  /**
-   * TODO: Initialize the pid variable.
-   */
+  float target_speed_mph_{20.0};
+  VehicleController controller(target_speed_mph_);
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
-                     uWS::OpCode opCode) {
-    // "42" at the start of the message means there's a websocket message event.
-    // The 4 signifies a websocket message
-    // The 2 signifies a websocket event
+  h.onMessage([&controller](uWS::WebSocket<uWS::SERVER> ws, char *data,
+                            size_t length, uWS::OpCode opCode) {
+    // "42" at the start of the message means there's a websocket message
+    // event. The 4 signifies a websocket message The 2 signifies a
+    // websocket event
     if (length && length > 2 && data[0] == '4' && data[1] == '2') {
       auto s = hasData(string(data).substr(0, length));
 
@@ -57,23 +55,21 @@ int main() {
           double cte = std::stod(j[1]["cte"].get<string>());
           double speed = std::stod(j[1]["speed"].get<string>());
           double angle = std::stod(j[1]["steering_angle"].get<string>());
-          double steer_value;
-          /**
-           * TODO: Calculate steering value here, remember the steering value is
-           *   [-1, 1].
-           * NOTE: Feel free to play around with the throttle and speed.
-           *   Maybe use another PID controller to control the speed!
-           */
+          controller.setCrossTrackError(cte);
+          controller.setTelemetrySpeed(speed);
+          controller.setTelemetrySteeringAngle(angle);
 
-          // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value
-                    << std::endl;
+          controller.step();
+
+          float steering_action = controller.getActionSteeringAngle();
+          float throttle_action = controller.getActionThrottle();
+          std::cout << "[action]: steering: " << steering_action
+                    << ", throttle: " << throttle_action << std::endl;
 
           json msgJson;
-          msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
+          msgJson["steering_angle"] = steering_action;
+          msgJson["throttle"] = throttle_action;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }  // end "telemetry" if
       } else {
