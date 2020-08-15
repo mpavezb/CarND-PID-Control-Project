@@ -25,9 +25,6 @@ class VehicleController {
   }
 
   void step() {
-    std::cout << "[telemetry] cte: " << current_cte_
-              << ", speed_mph: " << current_speed_mph_ << std::endl;
-
     updateTargetSpeed();
 
     float speed_error = target_speed_mph_ - current_speed_mph_;

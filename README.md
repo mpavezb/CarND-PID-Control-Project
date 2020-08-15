@@ -28,71 +28,42 @@ Self-Driving Car Engineer Nanodegree Program
 
 Fellow students have put together a guide to Windows set-up for the project [here](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/files/Kidnapped_Vehicle_Windows_Setup.pdf) if the environment you have set up for the Sensor Fusion projects does not work for this project. There's also an experimental patch for windows in this [PR](https://github.com/udacity/CarND-PID-Control-Project/pull/3).
 
-## Basic Build Instructions
+## Build Instructions
 
 1. Clone this repo.
 2. Make a build directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
 4. Run it: `./pid`. 
 
-Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
+## Implementation
 
-## Editor Settings
+Two PID controllers were implemented, one for the steering and one for the throttle. Both controllers share the PID implementation, but differ on the PID gains. The implementation is based on the standard representation for PID controllers, as seen in the lessons.
 
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
+The output of the controllers is limited to values between [-1,1]. This avoids sending control actions which could be dangerous.
 
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
+In order to deal with the integral component accumulating to large values, an anti-windup technique was implemented: if the control action exceeds the limits, then the integral component wont contribute to the output, but it will keep accumulating error. This is particularly useful when the controller setpoint is still distant.
 
-## Code Style
+In order to ease the navigation on curved parts of the road, the target speed is reduced whenever the cross-track-error exceeds a set limit. The controller will always attempt to go at 30 mph, but the speed could be reduced up to 20 mph.
 
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
+## Reflection
 
-## Project Instructions and Rubric
+This section describes the effect of each PID component and how the gains were chosen.
 
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
+### Components
 
-More information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/e8235395-22dd-4b87-88e0-d108c5e5bbf4/concepts/6a4d8d42-6a04-4aa6-b284-1697c0fd6562)
-for instructions and the project rubric.
+**P - Proportional Component**: This action is proportional to the error, and is responsible for setting the plant near the setpoint quickly. It is directly related to the control speed. By setting a large value the plant may oscilate, while too small values may not even have any effect.
 
-## Hints!
+**I - Integral Component**: This action is proportional to the accumulated error over time. The value increases slowly. It is responsible for setting the steady state error to zero.
 
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
+**D - Derivative Component**: This action is proportional to the rate of change of the error. It is responsible for adjusting the control action when the error changes quickly, allowing a stronger and faster response to errors.
 
-## Call for IDE Profiles Pull Requests
+### Tuning of PID gains
 
-Help your fellow students!
+The same procedure was followed for both controllers. In particular, the throttle controller was tuned first, because having a constant speed makes tuning the steering controller easier.
 
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
-
+1. Deactivate the control action limits, as to not hide the effect of the gains.
+2. Increase the P gain until the system starts oscillating, and is still stable.
+3. Increase the D gain (small values) and verify the oscillations are eliminated.
+4. Increase the I gain to make sure the steady error is being eliminated.
+5. Make sure the gains work well enough on different setpoints (20mph-50mph, straight and curved road).
+6. Introduce perturbations to the plant by manually adding error on the simulator (increase/decrease speed, force steering to the sides), and make sure the controllers can deal with that.

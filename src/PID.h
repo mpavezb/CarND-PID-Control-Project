@@ -36,9 +36,6 @@ class PID {
     // derivative
     d_value_ = (error - last_error_) / elapsed_s;
 
-    // std::cout << "elapsed_s: " << elapsed_s << ", I: " << i_value_
-    //           << ", D: " << d_value_ << std::endl;
-
     // last values
     last_error_ = error;
     last_time_ = Clock::now();
