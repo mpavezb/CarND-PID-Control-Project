@@ -34,8 +34,7 @@ string hasData(string s) {
 int main() {
   uWS::Hub h;
 
-  float target_speed_mph_{20.0};
-  VehicleController controller(target_speed_mph_);
+  VehicleController controller;
 
   h.onMessage([&controller](uWS::WebSocket<uWS::SERVER> ws, char *data,
                             size_t length, uWS::OpCode opCode) {
@@ -54,16 +53,18 @@ int main() {
           // j[1] is the data JSON object
           double cte = std::stod(j[1]["cte"].get<string>());
           double speed = std::stod(j[1]["speed"].get<string>());
-          double angle = std::stod(j[1]["steering_angle"].get<string>());
+          // double angle = std::stod(j[1]["steering_angle"].get<string>());
+
           controller.setCrossTrackError(cte);
           controller.setTelemetrySpeed(speed);
-          controller.setTelemetrySteeringAngle(angle);
-
           controller.step();
 
           float steering_action = controller.getActionSteeringAngle();
           float throttle_action = controller.getActionThrottle();
-          std::cout << "[action]: steering: " << steering_action
+
+          std::cout << "[telemetry] cte: " << cte << ", speed_mph: " << speed
+                    << std::endl
+                    << "[action]: steering: " << steering_action
                     << ", throttle: " << throttle_action << std::endl;
 
           json msgJson;
