@@ -9,8 +9,10 @@ class VehicleController {
  public:
   VehicleController(float target_speed_mph)
       : target_speed_mph_(target_speed_mph) {
-    steering_controller_.Init(0.0, 0.0, 0.0);
-    throttle_controller_.Init(0.2, 0.0, 0.0);
+    steering_controller_.SetCoefficients(0.0, 0.0, 0.0);
+    throttle_controller_.SetCoefficients(0.6, 0.01, 0.01);
+    steering_controller_.SetLimits(-1.0, 1.0);
+    throttle_controller_.SetLimits(-1.0, 1.0);
   }
 
   void step() {
@@ -31,14 +33,10 @@ class VehicleController {
   }
 
   float getActionSteeringAngle() const {
-    float action = 0.0;
-    return fmax(-1, fmin(+1, action));
+    return steering_controller_.getAction();
   }
 
-  float getActionThrottle() const {
-    float action = -1 * throttle_controller_.getAction();
-    return fmax(-1, fmin(+1, action));
-  }
+  float getActionThrottle() const { return throttle_controller_.getAction(); }
 
  private:
   // telemetry
