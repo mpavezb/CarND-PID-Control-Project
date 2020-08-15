@@ -35,35 +35,36 @@ Fellow students have put together a guide to Windows set-up for the project [her
 3. Compile: `cmake .. && make`
 4. Run it: `./pid`. 
 
+
 ## Implementation
 
-Two PID controllers were implemented, one for the steering and one for the throttle. Both controllers share the PID implementation, but differ on the PID gains. The implementation is based on the standard representation for PID controllers, as seen in the lessons.
+The implementation considers two PID controllers: one for the steering and one for the throttle. Both controllers share the same code but differ on the gains. They are based on the standard representation for PID controllers, as seen in the lessons.
 
-The output of the controllers is limited to values between [-1,1]. This avoids sending control actions which could be dangerous.
+The output of the controllers is limited to values between [-1,1] to avoid sending dangerous control actions.
 
-In order to deal with the integral component accumulating to large values, an anti-windup technique was implemented: if the control action exceeds the limits, then the integral component wont contribute to the output, but it will keep accumulating error. This is particularly useful when the controller setpoint is still distant.
+An anti-windup technique deals with the integral component accumulating too large values. It won't contribute to the output if the control action exceeds the limits,  but it will keep collecting error. That is particularly useful when the controller setpoint is still distant.
 
-In order to ease the navigation on curved parts of the road, the target speed is reduced whenever the cross-track-error exceeds a set limit. The controller will always attempt to go at 30 mph, but the speed could be reduced up to 20 mph.
+The target speed decreases whenever the cross-track-error exceeds a set limit, easing driving on curved parts of the road. The controller will always attempt to go at 30 mph, but the speed may reduce up to 20 mph.
 
 ## Reflection
 
-This section describes the effect of each PID component and how the gains were chosen.
+This section describes the effect of each PID component and how the gains were selected.
 
 ### Components
 
-**P - Proportional Component**: This action is proportional to the error, and is responsible for setting the plant near the setpoint quickly. It is directly related to the control speed. By setting a large value the plant may oscilate, while too small values may not even have any effect.
+**P - Proportional Component**: This action is proportional to the error, and is responsible for setting the plant near the setpoint quickly. It is directly related to the control speed. By using a big gain, the plant may oscillate, while too small values may not even have any effect.
 
-**I - Integral Component**: This action is proportional to the accumulated error over time. The value increases slowly. It is responsible for setting the steady state error to zero.
+**I - Integral Component**: This action is proportional to the accumulated error over time. Value increases slowly. It is responsible for setting the steady-state error to zero.
 
-**D - Derivative Component**: This action is proportional to the rate of change of the error. It is responsible for adjusting the control action when the error changes quickly, allowing a stronger and faster response to errors.
+**D - Derivative Component**: This action is proportional to the rate of change of the error. It is responsible for adjusting the control action when the error changes quickly, allowing a faster response.
 
 ### Tuning of PID gains
 
-The same procedure was followed for both controllers. In particular, the throttle controller was tuned first, because having a constant speed makes tuning the steering controller easier.
+Both controllers are tuned using the same procedure.  I started by the throttle controller because having a constant speed makes tuning the steering controller easier.
 
-1. Deactivate the control action limits, as to not hide the effect of the gains.
-2. Increase the P gain until the system starts oscillating, and is still stable.
-3. Increase the D gain (small values) and verify the oscillations are eliminated.
-4. Increase the I gain to make sure the steady error is being eliminated.
-5. Make sure the gains work well enough on different setpoints (20mph-50mph, straight and curved road).
+1. Deactivate the control action limits to avoid hiding the effect of the gains.
+2. Increase the P gain until the system starts oscillating and is still stable.
+3. Increase the D gain (small values) and verify the oscillations decrease.
+4. Increase the I gain to compensate for the steady error.
+5. Test on different setpoints: 20mph-50mph, straight and curved road.
 6. Introduce perturbations to the plant by manually adding error on the simulator (increase/decrease speed, force steering to the sides), and make sure the controllers can deal with that.
